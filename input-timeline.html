@@ -1,0 +1,157 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Copyright (c) 2014 Aleksandar Rodic @arodic
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<polymer-element name="input-timeline" attributes="frame start end fps buffered">
+  <template>
+    <style type="text/css">
+      :host {
+        display: block;
+        position: absolute;
+        right: 0;
+        left: 0;
+        bottom: 0;
+        height: 32px;
+        background: -webkit-linear-gradient(-60deg, #3d3d3d, #545454);
+        background: -moz-linear-gradient(-60deg, #3d3d3d, #545454);
+        background: linear-gradient(-60deg, #3d3d3d, #545454);
+        border-top: 1px solid #666;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+      }
+      :host #controls {
+        display: inline-block;
+        padding: 0 0 0 8px;
+      }
+      :host #scrubber {
+        position: absolute;
+        top: 4px;
+        left: 46px;
+        right: 88px;
+        height:24px;
+        background: #333;
+      }
+      :host #playhead {
+        position: absolute;
+        width: 2px;
+        height: 22px;
+        border: 1px solid #333;
+        background: #4bf9f9;
+        cursor: move;
+      }
+      :host #bufferhead {
+        position: absolute;
+        height: 22px;
+        border: 1px solid #333;
+        background: #4bf9f9;
+        opacity: 0.25;
+      }
+      :host #frame {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        height:24px;
+        width: 80px;
+        background: #333;
+        text-align: center;
+        line-height: 24px;
+      }  
+    </style>
+    <div id="controls">
+      <span id="play" on-tap="{{togglePlay}}">Play</span>
+      <span id="pause" on-tap="{{togglePlay}}">Pause</span>
+      <div id="scrubber"  on-mousemove="{{onPointerMove}}" on-mousedown="{{onPointerDown}}">
+        <div id="playhead" style="left:{{playheadOffset}}px"></div>
+        <div id="bufferhead" style="left:{{playheadOffset}}px; width:{{bufferheadWidth}}px"></div>
+      </div>
+      <div id="frame">{{frame}}</div>
+    </div>
+  </template>
+  <script type="text/javascript">
+
+    Polymer({
+      frame: 0,
+      start: 0,
+      end: 100,
+      fps: 20,
+      playing: false,
+      scrubbing: false,
+      playheadOffset: 0,
+      bufferheadWidth: 0,
+      buffered: 0,
+      ready: function() {
+        var scope = this;
+        document.addEventListener( 'mouseup', function(){ scope.scrubbing = false }, false );
+        this.play();
+      },
+      onPointerDown: function( event ) {
+        this.playing = false;
+        this.scrubbing = true;
+        this.onPointerMove(event);
+      },
+      onPointerMove: function( event ) {
+        if (this.scrubbing) {
+          this.buffered = 0;
+          var scrubberRect = this.$.scrubber.getBoundingClientRect();
+          var playheadRect = this.$.playhead.getBoundingClientRect();
+          var x = ( event.clientX - scrubberRect.left ) / ( scrubberRect.width - playheadRect.width );
+          this.frame = Math.floor( this.start + x * ( this.end - this.start ) );
+          this.frame = Math.min( Math.max( this.frame, this.start ), this.end );
+          this.fire('updated', { frame: this.frame } );
+        }
+      },
+      togglePlay: function() {
+        this.playing = !this.playing;
+      },
+      playingChanged: function() {
+        if ( this.playing ) {
+          this.play();
+          this.$.play.style.display = 'none';
+          this.$.pause.style.display = 'inline-block';
+        } else {
+          this.$.play.style.display = 'inline-block';
+          this.$.pause.style.display = 'none';
+        }
+      },
+      play: function() {
+        if (this.playing) {
+          var scope = this;
+          this.frame += 1;
+          if (this.frame > this.end) this.frame = this.start;
+          this.fire('updated', { frame: this.frame } );
+          setTimeout( function(){ requestAnimationFrame( function(){ scope.play(); } ) }, 1000/scope.fps );
+        }
+      },
+      frameChanged: function() {
+          var progress = ( this.frame - this.start ) / ( this.end - this.start );
+          var scrubberRect = this.$.scrubber.getBoundingClientRect();
+          var playheadRect = this.$.playhead.getBoundingClientRect();
+          this.playheadOffset = Math.floor( ( scrubberRect.width - playheadRect.width ) * progress );
+      },
+      bufferedChanged: function() {
+          var progress = this.buffered / ( this.end - this.start );
+          var scrubberRect = this.$.scrubber.getBoundingClientRect();
+          this.bufferheadWidth = Math.floor( ( scrubberRect.width ) * progress );
+      }
+    });
+
+  </script>
+</polymer-element>

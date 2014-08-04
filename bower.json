@@ -1,0 +1,22 @@
+{
+  "name": "input-timeline",
+  "version": "0.3.0",
+  "homepage": "https://github.com/arodic/input-timeline",
+  "authors": [
+    "Aleksandar Rodic <aleksandar.xyz@gmail.com>"
+  ],
+  "description": "CTimeline element.",
+  "main": "input-timeline.html",
+  "keywords": [
+    "input",
+    "field",
+    "polymer",
+    "web-components",
+    "UI",
+    "timeline"
+  ],
+  "license": "Apache 2.0",
+  "dependencies": {
+    "polymer": "Polymer/polymer#~0.3.4"
+  }
+}
